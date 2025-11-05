@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  lint_and_run:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas==2.3
+        pip install ruff
+
+    - name: Run ruff linter
+      run: |
+        ruff check .
+
+    - name: Run execute.py
+      run: |
+        python execute.py > result.json
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
+        publish_branch: gh-pages
+        # We publish only result.json at root
+        # So to avoid publishing the whole repo content, we create a temp folder
+    - name: Prepare artifact for GitHub Pages
+      run: |
+        mkdir -p gh-pages
+        mv result.json gh-pages/
+
+    - name: Deploy result.json to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: gh-pages
+        publish_branch: gh-pages
